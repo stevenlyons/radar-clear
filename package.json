@@ -1,0 +1,16 @@
+{
+  "name": "radar-clear",
+  "version": "0.1.0",
+  "description": "Clears Private Radar config",
+  "main": "app.js",
+  "scripts": {
+    "radar-clear": "node app.js"
+  },
+  "dependencies": {
+    "node-rest-client": "^1.5",
+    "async": "^1.4",
+    "minimist": "^1.2"
+  },
+  "author": "Steven Lyons",
+  "license": "MIT"
+}
