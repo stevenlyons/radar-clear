@@ -1,5 +1,9 @@
 // radar-clear
 // Clears the Radar settings from the platforms specified by the alias filter
+// Options:
+// -f filter: filter string
+// -d: dry run
+// -v: verbose
 
 "use strict";
 
