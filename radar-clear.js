@@ -1,19 +1,24 @@
-var async = require('async');
-var Client = require('node-rest-client').Client;
-var minimist = require('minimist');
+"use strict";
 
-var client = new Client(); 
+const async = require('async');
+const Client = require('node-rest-client').Client;
+const minimist = require('minimist');
 
-var _url = "https://portal.dev.cedexis.com/api";
-var _clientId = "test_sjl";
-var _clientSecret = "e9a6fd7e-f44e-4b39-8067-724b40ec4f2c"; // Cedexis Dev
-//var _clientSecret = "c6c40437-6cf7-4ecf-a3e2-79bda2f3fe55"; // Tango
-var _token;
-var _filter = extractFilter();
+const client = new Client(); 
+
+const _url = "https://portal.dev.cedexis.com/api";
+const _clientId = "test_sjl";
+const _clientSecret = "e9a6fd7e-f44e-4b39-8067-724b40ec4f2c"; // Cedexis Dev
+//const _clientSecret = "c6c40437-6cf7-4ecf-a3e2-79bda2f3fe55"; // Tango
+const _options = extractOptions();
+let _token;
 
 async.waterfall([
     function (callback) {
-        console.log("Started updating platforms");
+        let message = _options.dryrun ? "DRYRUN: Platforms that would be changed" 
+                                      : "Started updating platforms";
+        
+        console.log(message);
         callback(null, _clientId, _clientSecret);
     },
     generateAccessToken,
@@ -36,95 +41,115 @@ async.waterfall([
 function updatePlatform(platform, callback) {
     console.log(`Updating platform: ${platform.displayName} - ${platform.name}`);
 
+    if (_options.dryrun) {
+        return callback(null, null);
+    }
+
     console.log(platform);
     platform.radarConfig = getDefaultRadarConfig();
     console.log(platform);
 
-//return callback(null); // temp
+return callback(null); // temp
 
-    var args = {
+    let args = {
             data: platform,
             headers: { "Authorization": `Bearer ${_token}`, "Content-Type": "application/json" } 
-        };
+    };
 
     client.put(`${_url}/v2/config/platforms.json/${platform.id}`, args, function(data, response) {
-            // parsed response body as js object 
-            //console.log(data);
+        // parsed response body as js object 
+        //console.log(data);
 
-            if (data && response.statusCode == 200) {
-                //console.log("Update: " + JSON.stringify(data));
-                return callback(null, data);
-            }
+        if (data && response.statusCode == 200) {
+            //console.log("Update: " + JSON.stringify(data));
+            return callback(null, data);
+        }
 
 //console.log("Status Code: " + response.statusCode);
 //console.log("Update: " + JSON.stringify(data));
 
-            message = "Error updating platform";
-            if (data && data.errorDetails && data.errorDetails[0].developerMessage) {
-                message = data.errorDetails[0].developerMessage;
-            }
-            
-            return callback(new RadarException(message));
-        }); 
+        let message = "Error updating platform";
+        if (data && data.errorDetails && data.errorDetails[0].developerMessage) {
+            message = data.errorDetails[0].developerMessage;
+        }
+        
+        return callback(new RadarException(message));
+    }); 
 }
 
-function extractFilter() {
-    var argv = minimist(process.argv.slice(2));
+function extractOptions() {
+    let options = {
+        string: ['filter'],
+        boolean: ['dryrun', 'verbose'],
+        alias: {
+            f: 'filter',
+            d: 'dryrun',
+            v: 'verbose'
+        },
+        default: {
+            filter: '',
+            d: false,
+            v: false
+        }
+    };
+    let argv = minimist(process.argv.slice(2), options);
 
-    return (argv && argv.f) ? argv.f : "";
+    if (_options.verbose) { console.log (JSON.stringify(argv)); }
+
+    return (argv) ? argv : {};
 }
 
 function generateAccessToken(clientId, clientSecret, callback) {
-    var args = {
+    let args = {
             data: [`client_id=${clientId}`, `client_secret=${clientSecret}`, `grant_type=client_credentials`].join('&'),
             headers: { "Content-Type": "application/x-www-form-urlencoded" } 
-        };
+    };
 
     client.post(`${_url}/oauth/token`, args, function(data, response) {
-            // parsed response body as js object 
-            //console.log(data);
+        // parsed response body as js object 
+        //console.log(data);
 
-            if (data && data.access_token && response.statusCode == 200) {
-                _token = data.access_token;
-                return callback(null, data.access_token);
-            }
+        if (data && data.access_token && response.statusCode == 200) {
+            _token = data.access_token;
+            return callback(null, data.access_token);
+        }
 
-            message = "Error getting access token";
-            if (data && data.developerMessage) {
-                message = data.developerMessage;
-            }
-            
-            return callback(new RadarException(message));
-        }); 
+        let message = "Error getting access token";
+        if (data && data.developerMessage) {
+            message = data.developerMessage;
+        }
+        
+        return callback(new RadarException(message));
+    }); 
 }
 
 function getPlatforms(token, callback) {
-    var args = {
+    let args = {
             headers: { "Authorization": `Bearer ${token}` } 
-        };
+    };
 
     // v2/reporting/platforms.json/private
     client.get(`${_url}/v2/config/platforms.json`, args, function(data, response) {
-            // parsed response body as js object 
+        // parsed response body as js object 
+        //console.log(data);
+
+        if (data && response.statusCode == 200) {
             //console.log(data);
+            let filtered = data.filter( filterPlatforms );                    
+            return callback(null, filtered);
+        }
 
-            if (data && response.statusCode == 200) {
-                //console.log(data);
-                var filtered = data.filter( filterPlatforms );                    
-                return callback(null, filtered);
-            }
-
-            message = "Error getting platforms";
-            if (data && data.developerMessage) {
-                message = data.developerMessage;
-            }
-            
-            return callback(new RadarException(message));
-        }); 
+        let message = "Error getting platforms";
+        if (data && data.developerMessage) {
+            message = data.developerMessage;
+        }
+        
+        return callback(new RadarException(message));
+    }); 
 }
 
 function filterPlatforms(value) {
-    return value.publicProviderArchetypeId == 0 && value.name.startsWith(_filter);
+    return value.publicProviderArchetypeId == 0 && value.name.startsWith(_options.filter);
 }
 
 function RadarException(message) {
