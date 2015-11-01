@@ -6,7 +6,8 @@ var client = new Client();
 
 var _url = "https://portal.dev.cedexis.com/api";
 var _clientId = "test_sjl";
-var _clientSecret = "c6c40437-6cf7-4ecf-a3e2-79bda2f3fe55"; //e9a6fd7e-f44e-4b39-8067-724b40ec4f2c";
+var _clientSecret = "e9a6fd7e-f44e-4b39-8067-724b40ec4f2c"; // Cedexis Dev
+//var _clientSecret = "c6c40437-6cf7-4ecf-a3e2-79bda2f3fe55"; // Tango
 var _token;
 var _filter = extractFilter();
 
@@ -24,7 +25,7 @@ async.waterfall([
 
    async.each (result, updatePlatform, function(err) {
         if (err) {
-            console.log(err);
+            console.log("Error: " + err.message);
         }
 
         console.log("Finished updating platforms");
@@ -35,30 +36,35 @@ async.waterfall([
 function updatePlatform(platform, callback) {
     console.log(`Updating platform: ${platform.displayName} - ${platform.name}`);
 
-//    console.log(platform);
+    console.log(platform);
     platform.radarConfig = getDefaultRadarConfig();
-//    console.log(platform);
+    console.log(platform);
 
-return callback(null);
+//return callback(null); // temp
 
     var args = {
-            headers: { "Authorization": `Bearer ${_token}` } 
+            data: platform,
+            headers: { "Authorization": `Bearer ${_token}`, "Content-Type": "application/json" } 
         };
 
-    client.put(`${_url}/v2/config/platforms.json/${platform.id}`, args, function(data, response){
+    client.put(`${_url}/v2/config/platforms.json/${platform.id}`, args, function(data, response) {
             // parsed response body as js object 
             //console.log(data);
 
-            if (data ) {
+            if (data && response.statusCode == 200) {
+                //console.log("Update: " + JSON.stringify(data));
                 return callback(null, data);
             }
 
+//console.log("Status Code: " + response.statusCode);
+//console.log("Update: " + JSON.stringify(data));
+
             message = "Error updating platform";
-            if (data && data.developerMessage) {
-                message = data.developerMessage;
+            if (data && data.errorDetails && data.errorDetails[0].developerMessage) {
+                message = data.errorDetails[0].developerMessage;
             }
             
-            throw new RadarException(message);
+            return callback(new RadarException(message));
         }); 
 }
 
@@ -74,11 +80,11 @@ function generateAccessToken(clientId, clientSecret, callback) {
             headers: { "Content-Type": "application/x-www-form-urlencoded" } 
         };
 
-    client.post(`${_url}/oauth/token`, args, function(data, response){
+    client.post(`${_url}/oauth/token`, args, function(data, response) {
             // parsed response body as js object 
             //console.log(data);
 
-            if (data && data.access_token) {
+            if (data && data.access_token && response.statusCode == 200) {
                 _token = data.access_token;
                 return callback(null, data.access_token);
             }
@@ -88,7 +94,7 @@ function generateAccessToken(clientId, clientSecret, callback) {
                 message = data.developerMessage;
             }
             
-            throw new RadarException(message);
+            return callback(new RadarException(message));
         }); 
 }
 
@@ -102,7 +108,7 @@ function getPlatforms(token, callback) {
             // parsed response body as js object 
             //console.log(data);
 
-            if (data) {
+            if (data && response.statusCode == 200) {
                 //console.log(data);
                 var filtered = data.filter( filterPlatforms );                    
                 return callback(null, filtered);
@@ -113,7 +119,7 @@ function getPlatforms(token, callback) {
                 message = data.developerMessage;
             }
             
-            throw new RadarException(message);
+            return callback(new RadarException(message));
         }); 
 }
 
@@ -126,10 +132,11 @@ function RadarException(message) {
    this.name = "RadarException";
 }
 
+
 function getDefaultRadarConfig() {
-    return { httpEnabled: true,
+    return { httpEnabled: false,
            httpsEnabled: false,
-           usePublicData: false,
+           usePublicData: 0,
            primeUrl: null,
            rttUrl: null,
            xlUrl: null,
@@ -139,7 +146,7 @@ function getDefaultRadarConfig() {
            xlSecureUrl: null,
            customSecureUrl: null,
            weight: 10,
-           weightEnabled: true,
+           weightEnabled: false,
            cacheBusting: true,
            isoWeightList: null,
            isoWeight: null,
@@ -155,8 +162,8 @@ function getDefaultRadarConfig() {
            rttSecureType: null,
            xlSecureType: null,
            customSecureType: null,
-           radar14PrimeUrl: null,
-           radar14RttUrl: null,
+           radar14PrimeUrl: '',
+           radar14RttUrl: '',
            radar14XlUrl: null,
            radar14PrimeSecureUrl: null,
            radar14RttSecureUrl: null,
