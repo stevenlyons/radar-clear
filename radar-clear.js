@@ -1,3 +1,6 @@
+// radar-clear
+// Clears the Radar settings from the platforms specified by the alias filter
+
 "use strict";
 
 const async = require('async');
@@ -90,7 +93,6 @@ function getPlatforms(token, callback) {
             headers: { "Authorization": `Bearer ${token}` } 
     };
 
-    // v2/reporting/platforms.json/private
     client.get(`${_url}/v2/config/platforms.json`, args, function(data, response) {
         // Too much data for verbose
         //verboseLog("Platform Data: ", data);
