@@ -1,17 +1,17 @@
 // radar-clear
 // Clears the Radar settings from the platforms specified by the alias filter
 // Options:
+// -c: commit
 // -f filter: filter string
-// -d: dry run
 // -v: verbose
 
 "use strict";
 
 const async = require('async');
-const Client = require('node-rest-client').Client;
+const nodeRestClient = require('node-rest-client').Client;
 const minimist = require('minimist');
 
-const client = new Client(); 
+const client = new nodeRestClient(); 
 const _options = extractOptions();
 
 const _url = "https://portal.dev.cedexis.com/api";
@@ -22,8 +22,8 @@ let _token;
 
 async.waterfall([
     function (callback) {
-        let message = _options.dryrun ? "DRYRUN: Platforms that would be changed" 
-                                      : "Started updating platforms";
+        let message = _options.commit ? "COMMIT: Started updating platforms" 
+                                      : "DRYRUN: Platforms that would be changed";
         
         console.log(message);
 
@@ -50,15 +50,15 @@ async.waterfall([
 function extractOptions() {
     let options = {
         string: ['filter'],
-        boolean: ['dryrun', 'verbose'],
+        boolean: ['commit', 'verbose'],
         alias: {
+            c: 'commit',
             f: 'filter',
-            d: 'dryrun',
             v: 'verbose'
         },
         default: {
+            c: false,
             filter: '',
-            d: false,
             v: false
         }
     };
@@ -121,7 +121,7 @@ function getPlatforms(token, callback) {
 function updatePlatform(platform, callback) {
     console.log(`Updating platform: ${platform.displayName} - ${platform.name}`);
 
-    if (_options.dryrun) {
+    if (!_options.commit) {
         return callback(null, null);
     }
 
