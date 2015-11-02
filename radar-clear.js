@@ -12,12 +12,12 @@ const Client = require('node-rest-client').Client;
 const minimist = require('minimist');
 
 const client = new Client(); 
+const _options = extractOptions();
 
 const _url = "https://portal.dev.cedexis.com/api";
 const _clientId = "test_sjl";
 const _clientSecret = "e9a6fd7e-f44e-4b39-8067-724b40ec4f2c"; // Cedexis Dev
 //const _clientSecret = "c6c40437-6cf7-4ecf-a3e2-79bda2f3fe55"; // Tango
-const _options = extractOptions();
 let _token;
 
 async.waterfall([
@@ -76,7 +76,7 @@ function generateAccessToken(clientId, clientSecret, callback) {
     client.post(`${_url}/oauth/token`, args, function(data, response) {
         verboseLog("Token Data: ", data);
 
-        if (data && data.access_token && response.statusCode == 200) {
+        if (data && data.access_token && response.statusCode === 200) {
             _token = data.access_token;
             return callback(null, data.access_token);
         }
@@ -101,7 +101,7 @@ function getPlatforms(token, callback) {
         // Too much data for verbose
         //verboseLog("Platform Data: ", data);
 
-        if (data && response.statusCode == 200) {
+        if (data && response.statusCode === 200) {
             let filtered = data.filter(filterPlatforms);
             verboseLog("Filtered Platform Data: ", filtered);
             return callback(null, filtered);
@@ -137,7 +137,7 @@ function updatePlatform(platform, callback) {
     client.put(`${_url}/v2/config/platforms.json/${platform.id}`, args, function(data, response) {
         verboseLog("Update Data: ", data);
 
-        if (data && response.statusCode == 200) {
+        if (data && response.statusCode === 200) {
             return callback(null, data);
         }
 
@@ -153,7 +153,7 @@ function updatePlatform(platform, callback) {
 }
 
 function filterPlatforms(value) {
-    return value.publicProviderArchetypeId == 0 && value.name.startsWith(_options.filter);
+    return value.publicProviderArchetypeId === 0 && value.name.startsWith(_options.filter);
 }
 
 function stringify(json) {
