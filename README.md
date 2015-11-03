@@ -21,7 +21,9 @@ $ node radar-clear.js
 ```
 
 The following options are available:
+
 Option | Alias | Description
+-------|-------|------------
 -c | commit | By default, the tool does a dryrun and does not update the platform. Use this to make the update on all matching platforms.
 -f | filter | A filter applied to the platform aliases to select which platforms should be updated. A simple filter that matches the start of the alias names.
 -v | verbose | Outputs additional information while processing.
