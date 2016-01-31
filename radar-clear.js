@@ -15,9 +15,9 @@ const client = new nodeRestClient();
 const _options = extractOptions();
 
 const _url = "https://portal.dev.cedexis.com/api";
-const _clientId = "test_sjl";
-const _clientSecret = "e9a6fd7e-f44e-4b39-8067-724b40ec4f2c"; // Cedexis Dev
-//const _clientSecret = "c6c40437-6cf7-4ecf-a3e2-79bda2f3fe55"; // Tango
+const _clientId = "";
+const _clientSecret = "";
+
 let _token;
 
 async.waterfall([
